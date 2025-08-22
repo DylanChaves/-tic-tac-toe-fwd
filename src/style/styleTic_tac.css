@@ -1,0 +1,115 @@
+body {
+  font-family: 'Poppins', sans-serif;
+  text-align: center;
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  margin: 0;
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  
+}
+
+h1 {
+  margin-bottom: 10px;
+  color: white;
+  text-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+  font-size: 2.5rem;
+}
+
+/* Controles */
+.controles {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0;
+}
+.controles label {
+  color: #fff;
+  font-weight: 600;
+  background: rgba(255,255,255,0.15);
+  padding: 6px 10px;
+  border-radius: 12px;
+}
+.controles select {
+  margin-left: 6px;
+  border: none;
+  border-radius: 10px;
+  padding: 6px 8px;
+}
+
+/* Marcador */
+#marcador {
+  margin: 12px 0;
+  background: rgba(255,255,255,0.2);
+  padding: 10px 20px;
+  border-radius: 12px;
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  font-weight: bold;
+  color: #fff;
+}
+
+/* Tablero */
+.tablero {
+  display: grid;
+  grid-template-columns: repeat(3, 120px);
+  grid-template-rows: repeat(3, 120px);
+  gap: 10px;
+  justify-content: center;
+  margin: 16px auto;
+}
+
+.casilla {
+  width: 120px;
+  height: 120px;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.casilla:hover { transform: scale(1.06); background: #f0f0f0; }
+.casilla.ocupada { cursor: not-allowed; color: #555; }
+.casilla.ganadora { background: #d4ffd8; box-shadow: 0 0 0 3px #2ecc71 inset; }
+
+#turnoTexto {
+  font-weight: bold;
+  margin: 8px 0;
+  font-size: 1.2rem;
+  color: white;
+}
+#mensaje {
+  font-size: 1.2rem;
+  color: #fff;
+  margin-top: 6px;
+  font-weight: bold;
+  text-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+}
+
+button {
+  background: #ff6f61;
+  border: none;
+  padding: 12px 25px;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-radius: 30px;
+  cursor: pointer;
+  margin-top: 14px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  transition: all 0.25s ease;
+}
+button:hover { background: #e85a50; transform: scale(1.05); }

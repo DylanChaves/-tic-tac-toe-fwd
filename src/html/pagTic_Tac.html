@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../style/styleTic_tac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+</head>
+<body>
+  <main>
+    <h1>Juego del Gato</h1>
+
+        <section class="controles">
+      <label>
+        Modo:
+        <select id="modo">
+          <option value="cpu">Contra la Máquina</option>
+          <option value="pvp">2 Jugadores</option>
+        </select>
+      </label>
+      <label id="wrapDificultad">
+        Dificultad:
+        <select id="dificultad">
+          <option value="facil">Fácil</option>
+          <option value="normal" selected>Normal</option>
+        </select>
+      </label>
+      <label id="wrapQuienEmpieza">
+        Empieza:
+        <select id="quienEmpieza">
+          <option value="X">X (Tú)</option>
+          <option value="O">O (CPU)</option>
+        </select>
+      </label>
+    </section>
+
+    <!-- Marcador -->
+    <section id="marcador">
+      <p>Victorias X: <span id="puntosX">0</span></p>
+      <p>Victorias O: <span id="puntosO">0</span></p>
+      <p>Empates: <span id="puntosEmpate">0</span></p>
+    </section>
+
+    <!-- Tablero -->
+    <section id="juego">
+      <div class="tablero" id="tablero">
+        <div class="casilla"></div>
+        <div class="casilla"></div>
+        <div class="casilla"></div>
+        <div class="casilla"></div>
+        <div class="casilla"></div>
+        <div class="casilla"></div>
+        <div class="casilla"></div>
+        <div class="casilla"></div>
+        <div class="casilla"></div>
+      </div>
+      <h2 id="turnoTexto">Turno de: X</h2>
+      <p id="mensaje" aria-live="polite"></p>
+      <button id="reiniciarBtn">Reiniciar</button>
+    </section>
+  </main>
+    <script src="../js/logicaTic_tac.js"></script>
+</body>
+</html>
