@@ -1,211 +1,249 @@
-const casillas = Array.from(document.getElementsByClassName("casilla"));
-const tablero = document.getElementById("tablero");
-const mensaje = document.getElementById("mensaje");
-const botonReiniciar = document.getElementById("reiniciarBtn");
-const turnoTexto = document.getElementById("turnoTexto");
+// ====== Referencias del DOM ======
+const cellElements = Array.from(document.getElementsByClassName("casilla"));
+const boardElement = document.getElementById("tablero");
+const messageElement = document.getElementById("mensaje");
+const resetButton = document.getElementById("reiniciarBtn");
+const turnLabel = document.getElementById("turnoTexto");
 
-const modoSelect = document.getElementById("modo");
-const dificultadSelect = document.getElementById("dificultad");
-const quienEmpiezaSelect = document.getElementById("quienEmpieza");
-const wrapDificultad = document.getElementById("wrapDificultad");
-const wrapQuienEmpieza = document.getElementById("wrapQuienEmpieza");
+const modeSelect = document.getElementById("modo");
+const difficultySelect = document.getElementById("dificultad");
+const firstPlayerSelect = document.getElementById("quienEmpieza");
+const difficultyWrap = document.getElementById("wrapDificultad");
+const firstPlayerWrap = document.getElementById("wrapQuienEmpieza");
 
-// Marcador
-const puntosXEl = document.getElementById("puntosX");
-const puntosOEl = document.getElementById("puntosO");
-const puntosEmpateEl = document.getElementById("puntosEmpate");
-let puntosX = 0, puntosO = 0, puntosEmpate = 0;
+// ====== Marcador ======
+const scoreXElement = document.getElementById("puntosX");
+const scoreOElement = document.getElementById("puntosO");
+const scoreDrawElement = document.getElementById("puntosEmpate");
+let scoreX = 0;
+let scoreO = 0;
+let scoreDraw = 0;
 
-let jugadorActual = "X";
-let juegoActivo = true;
-let modo = modoSelect ? modoSelect.value : "cpu";
-let dificultad = dificultadSelect ? dificultadSelect.value : "normal";
-let comboGanadora = null;
+// ====== Estado del juego ======
+let currentPlayer = "X";
+let isGameActive = true;
+let gameMode = modeSelect ? modeSelect.value : "cpu";          // "cpu" | "pvp"
+let difficulty = difficultySelect ? difficultySelect.value : "normal"; // "facil" | "normal"
+let winningCombo = null;
 
-const combinacionesGanadoras = [
-  [0,1,2],[3,4,5],[6,7,8],
-  [0,3,6],[1,4,7],[2,5,8],
-  [0,4,8],[2,4,6]
+// Todas las combinaciones posibles de victoria (índices de casillas)
+const winningCombos = [
+  [0,1,2],[3,4,5],[6,7,8], // filas
+  [0,3,6],[1,4,7],[2,5,8], // columnas
+  [0,4,8],[2,4,6]          // diagonales
 ];
 
-// Listeners de UI
-if (modoSelect) {
-  modoSelect.addEventListener("change", () => {
-    modo = modoSelect.value;
-    wrapDificultad.style.display = modo === "cpu" ? "inline-flex" : "none";
-    wrapQuienEmpieza.style.display = modo === "cpu" ? "inline-flex" : "none";
-    reiniciar();
+// ====== Listeners de UI ======
+if (modeSelect) {
+  modeSelect.addEventListener("change", () => {
+    gameMode = modeSelect.value;
+
+    // Mostrar u ocultar opciones de CPU
+    difficultyWrap.style.display = gameMode === "cpu" ? "inline-flex" : "none";
+    firstPlayerWrap.style.display = gameMode === "cpu" ? "inline-flex" : "none";
+
+    // Reiniciar marcador cuando cambias de modo 
+    resetScoreboard();
+
+    // Reiniciar partida
+    resetGame();
   });
 }
-if (dificultadSelect) {
-  dificultadSelect.addEventListener("change", () => {
-    dificultad = dificultadSelect.value;
-    reiniciar();
+
+if (difficultySelect) {
+  difficultySelect.addEventListener("change", () => {
+    difficulty = difficultySelect.value;
+    resetGame();
   });
 }
-if (quienEmpiezaSelect) {
-  quienEmpiezaSelect.addEventListener("change", reiniciar);
+
+if (firstPlayerSelect) {
+  firstPlayerSelect.addEventListener("change", resetGame);
 }
 
 // Click en casillas
-casillas.forEach(casilla => {
-  casilla.addEventListener("click", () => {
-    if (!juegoActivo || casilla.classList.contains("ocupada")) return;
+cellElements.forEach(cellEl => {
+  cellEl.addEventListener("click", () => {
+    // Ignorar si terminó el juego o la casilla ya está ocupada
+    if (!isGameActive || cellEl.classList.contains("ocupada")) return;
 
-    if (modo === "cpu") {
-      if (jugadorActual !== "X") return;
-      jugarTurno(casilla, "X");
-      if (juegoActivo) setTimeout(turnoMaquina, 500);
+    if (gameMode === "cpu") {
+      // En CPU solo juega el humano (X) con clicks
+      if (currentPlayer !== "X") return;
+
+      playTurn(cellEl, "X");
+
+      // Si sigue activo, turno de la máquina
+      if (isGameActive) setTimeout(cpuTurn, 500);
     } else {
-      jugarTurno(casilla, jugadorActual);
+      // PvP: alternan X y O
+      playTurn(cellEl, currentPlayer);
     }
   });
 });
 
-function jugarTurno(casilla, jugador) {
-  casilla.textContent = jugador;
-  casilla.classList.add("ocupada");
+// ====== Lógica de juego ======
+function playTurn(cellEl, playerSymbol) {
+  cellEl.textContent = playerSymbol;
+  cellEl.classList.add("ocupada");
 
-  if (verificarGanador(jugador)) {
-    mensaje.textContent = `¡El jugador ${jugador} ha ganado! 🎉`;
-    juegoActivo = false;
-    resaltarLineaGanadora();
-    actualizarMarcador(jugador);
+  if (checkWinner(playerSymbol)) {
+    messageElement.textContent = `¡El jugador ${playerSymbol} ha ganado! 🎉`;
+    isGameActive = false;
+    highlightWinningLine();
+    updateScore(playerSymbol);
+    return;
+  }
+// utilize este metodo para validar los array para ver si todas las casillas estan llenas y no hay un ganador
+  if (isDraw()) {
+    messageElement.textContent = "¡Empate!";
+    isGameActive = false;
+    updateScore("Empate");
     return;
   }
 
-  if (esEmpate()) {
-    mensaje.textContent = "¡Empate!";
-    juegoActivo = false;
-    actualizarMarcador("Empate");
-    return;
-  }
-
-  jugadorActual = jugador === "X" ? "O" : "X";
-  turnoTexto.textContent = `Turno de: ${jugadorActual}`;
+  currentPlayer = playerSymbol === "X" ? "O" : "X";
+  turnLabel.textContent = `Turno de: ${currentPlayer}`;
 }
 
-function turnoMaquina() {
-  if (!juegoActivo) return;
+function cpuTurn() {
+  if (!isGameActive) return;
 
-  let indice;
-  if (dificultad === "facil") {
-    const libres = obtenerCasillasLibres();
-    indice = libres[Math.floor(Math.random() * libres.length)];
+  let targetIndex;
+  if (difficulty === "facil") {
+    const freeCells = getFreeCells();
+    targetIndex = freeCells[Math.floor(Math.random() * freeCells.length)];
   } else {
-    indice = estrategiaNormal();
+    targetIndex = normalStrategy();
   }
-  jugarTurno(casillas[indice], "O");
+  playTurn(cellElements[targetIndex], "O");
 }
 
-function estrategiaNormal() {
-  const ganar = encontrarJugadaGanadora("O");
-  if (ganar !== -1) return ganar;
+// Heurística “normal”: gana > bloquea > centro > esquinas > lados
+function normalStrategy() {
+  const winIndex = findWinningMove("O");
+  if (winIndex !== -1) return winIndex;
 
-  const bloquear = encontrarJugadaGanadora("X");
-  if (bloquear !== -1) return bloquear;
+  const blockIndex = findWinningMove("X");
+  if (blockIndex !== -1) return blockIndex;
 
-  if (!casillas[4].classList.contains("ocupada")) return 4;
+  // Centro
+  if (!cellElements[4].classList.contains("ocupada")) return 4;
 
-  const esquinas = [0,2,6,8].filter(i => !casillas[i].classList.contains("ocupada"));
-  if (esquinas.length) return esquinas[Math.floor(Math.random() * esquinas.length)];
+  // Esquinas
+  const cornerIndices = [0, 2, 6, 8].filter(i => !cellElements[i].classList.contains("ocupada"));
+  if (cornerIndices.length) return cornerIndices[Math.floor(Math.random() * cornerIndices.length)];
 
-  const lados = [1,3,5,7].filter(i => !casillas[i].classList.contains("ocupada"));
-  return lados[Math.floor(Math.random() * lados.length)];
+  // Lados
+  const sideIndices = [1, 3, 5, 7].filter(i => !cellElements[i].classList.contains("ocupada"));
+  return sideIndices[Math.floor(Math.random() * sideIndices.length)];
 }
 
-function encontrarJugadaGanadora(jugador) {
-  for (let combo of combinacionesGanadoras) {
-    const [a,b,c] = combo;
-    const v = [casillas[a].textContent, casillas[b].textContent, casillas[c].textContent];
-    const o = [casillas[a], casillas[b], casillas[c]].map(el => el.classList.contains("ocupada"));
-    const count = v.filter(x => x === jugador).length;
-    if (count === 2) {
-      if (!o[0] && v[1] === jugador && v[2] === jugador) return a;
-      if (!o[1] && v[0] === jugador && v[2] === jugador) return b;
-      if (!o[2] && v[0] === jugador && v[1] === jugador) return c;
+function findWinningMove(playerSymbol) {
+  for (const [indexA, indexB, indexC] of winningCombos) {
+    const values = [
+      cellElements[indexA].textContent,
+      cellElements[indexB].textContent,
+      cellElements[indexC].textContent
+    ];
+    const occupied = [
+      cellElements[indexA].classList.contains("ocupada"),
+      cellElements[indexB].classList.contains("ocupada"),
+      cellElements[indexC].classList.contains("ocupada")
+    ];
+
+    const playerCount = values.filter(v => v === playerSymbol).length;
+    if (playerCount === 2) {
+      const isAFreeAndRestPlayer = !occupied[0] && values[1] === playerSymbol && values[2] === playerSymbol;
+      if (isAFreeAndRestPlayer) return indexA;
+
+      const isBFreeAndRestPlayer = !occupied[1] && values[0] === playerSymbol && values[2] === playerSymbol;
+      if (isBFreeAndRestPlayer) return indexB;
+
+      const isCFreeAndRestPlayer = !occupied[2] && values[0] === playerSymbol && values[1] === playerSymbol;
+      if (isCFreeAndRestPlayer) return indexC;
     }
   }
   return -1;
 }
 
-function obtenerCasillasLibres() {
-  const libres = [];
-  for (let i = 0; i < casillas.length; i++) {
-    if (!casillas[i].classList.contains("ocupada")) libres.push(i);
+function getFreeCells() {
+  const freeIndices = [];
+  for (let i = 0; i < cellElements.length; i++) {
+    if (!cellElements[i].classList.contains("ocupada")) freeIndices.push(i);
   }
-  return libres;
+  return freeIndices;
 }
 
-function verificarGanador(jugador) {
-  for (let [jugadaA,jugadaB,jugadaC] of combinacionesGanadoras) {
-    if (
-      casillas[jugadaA].textContent === jugador &&
-      casillas[jugadaB].textContent === jugador &&
-      casillas[jugadaC].textContent === jugador
-    ) {
-      comboGanadora = [jugadaA, jugadaB, jugadaC]; // <<< guardar aquí
+function checkWinner(playerSymbol) {
+  for (const [indexA, indexB, indexC] of winningCombos) {
+    const isLine =
+      cellElements[indexA].textContent === playerSymbol &&
+      cellElements[indexB].textContent === playerSymbol &&
+      cellElements[indexC].textContent === playerSymbol;
+
+    if (isLine) {
+      winningCombo = [indexA, indexB, indexC];
       return true;
     }
   }
   return false;
 }
 
-function resaltarLineaGanadora() {
-  if (!comboGanadora) return;
-  const [a,b,c] = comboGanadora;
-  [a,b,c].forEach(i => casillas[i].classList.add("ganadora"));
+function highlightWinningLine() {
+  if (!winningCombo) return;
+  const [indexA, indexB, indexC] = winningCombo;
+  [indexA, indexB, indexC].forEach(idx => cellElements[idx].classList.add("ganadora"));
 }
 
-function esEmpate() {
-  return casillas.every(c => c.textContent !== "");
+function isDraw() {
+  return cellElements.every(cellEl => cellEl.textContent !== "");
 }
 
-function reiniciar() {
-  casillas.forEach(casilla => {
-    casilla.textContent = "";
-    casilla.classList.remove("ocupada", "ganadora");
+function resetGame() {
+  cellElements.forEach(cellEl => {
+    cellEl.textContent = "";
+    cellEl.classList.remove("ocupada", "ganadora");
   });
-  mensaje.textContent = "";
-  juegoActivo = true;
-  comboGanadora = null; // <<< importante
 
-  if (modo === "cpu") {
-    jugadorActual = (quienEmpiezaSelect && quienEmpiezaSelect.value === "O") ? "O" : "X";
-    turnoTexto.textContent = `Turno de: ${jugadorActual}`;
-    if (jugadorActual === "O") setTimeout(turnoMaquina, 400);
+  messageElement.textContent = "";
+  isGameActive = true;
+  winningCombo = null;
+
+  if (gameMode === "cpu") {
+    currentPlayer = (firstPlayerSelect && firstPlayerSelect.value === "O") ? "O" : "X";
+    turnLabel.textContent = `Turno de: ${currentPlayer}`;
+    if (currentPlayer === "O") setTimeout(cpuTurn, 400);
   } else {
-    jugadorActual = "X";
-    turnoTexto.textContent = `Turno de: ${jugadorActual}`;
+    currentPlayer = "X";
+    turnLabel.textContent = `Turno de: ${currentPlayer}`;
   }
 }
 
-function actualizarMarcador(resultado) {
-  if (resultado === "X") {
-    puntosX++;
-    puntosXEl.textContent = puntosX;
-  } else if (resultado === "O") {
-    puntosO++;
-    puntosOEl.textContent = puntosO;
-  } else if (resultado === "Empate") {
-    puntosEmpate++;
-    puntosEmpateEl.textContent = puntosEmpate;
+function updateScore(result) {
+  if (result === "X") {
+    scoreX++;
+    scoreXElement.textContent = scoreX;
+  } else if (result === "O") {
+    scoreO++;
+    scoreOElement.textContent = scoreO;
+  } else if (result === "Empate") {
+    scoreDraw++;
+    scoreDrawElement.textContent = scoreDraw;
   }
 }
 
-botonReiniciar.addEventListener("click", reiniciar);
-function resetMarcador() {
-  puntosX = puntosO = puntosEmpate = 0;
-  puntosXEl.textContent = 0;
-  puntosOEl.textContent = 0;
-  puntosEmpateEl.textContent = 0;
+function resetScoreboard() {
+  scoreX = 0;
+  scoreO = 0;
+  scoreDraw = 0;
+  scoreXElement.textContent = 0;
+  scoreOElement.textContent = 0;
+  scoreDrawElement.textContent = 0;
 }
 
-// Si quieres resetear cuando cambie el modo:
-modoSelect.addEventListener("change", () => {
-  modo = modoSelect.value;
-  wrapDificultad.style.display = modo === "cpu" ? "inline-flex" : "none";
-  wrapQuienEmpieza.style.display = modo === "cpu" ? "inline-flex" : "none";
-  resetMarcador(); // << reset aquí si lo deseas
-  reiniciar();
-});
+// ====== Inicialización ======
+resetButton.addEventListener("click", resetGame);
+difficultyWrap.style.display = gameMode === "cpu" ? "inline-flex" : "none";
+firstPlayerWrap.style.display = gameMode === "cpu" ? "inline-flex" : "none";
+resetGame();
